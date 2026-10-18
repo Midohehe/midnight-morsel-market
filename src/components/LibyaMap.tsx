@@ -17,8 +17,8 @@ export function LibyaMap({ kitchens, youLabel }: { kitchens: Pin[]; youLabel: st
       if (cancelled || !el.current) return;
       map = L.map(el.current, { zoomControl: false, attributionControl: true }).setView([ME.lat, ME.lng], 12);
       L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19, attribution: "© OpenStreetMap contributors",
-      , className: "nb-tiles" }).addTo(map);
+        maxZoom: 19, attribution: "© OpenStreetMap contributors", className: "nb-tiles",
+      }).addTo(map);
       L.marker([ME.lat, ME.lng], { icon: L.divIcon({ className: "", html: `<div class="nb-me"></div>`, iconSize: [18, 18], iconAnchor: [9, 9] }) })
         .addTo(map).bindTooltip(youLabel);
       const pts: [number, number][] = [[ME.lat, ME.lng]];
