@@ -1,9 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n";
-import { db, resetDemo, session, uid } from "@/lib/store";
+import { db, resetDemo, session, uid, type Role } from "@/lib/store";
 import { WalletPanel } from "@/components/wallet";
-import { BottomNav, Card, LoginGate, PanelHeader, Stat, btnGhost, btnPrimary, inputCls } from "@/components/nb";
+import { BottomNav, Card, LoginGate, PanelHeader, Stat, Tabs, btnPrimary, inputCls } from "@/components/nb";
 
 export const Route = createFileRoute("/account")({
   head: () => ({
