@@ -2,7 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { MapPin, List, Map as MapIcon, Moon, ChefHat } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { db, distanceKm, CATEGORIES, ME } from "@/lib/store";
+import { db, distanceKm, CATEGORIES } from "@/lib/store";
+import { LibyaMap } from "@/components/LibyaMap";
 import { fmtCountdown, isOpenAt, nextChange, useNow } from "@/lib/time";
 import { BottomNav, Img, LangToggle, Logo, OpenBadge, Stars, money } from "@/components/nb";
 
@@ -99,7 +100,7 @@ function Home() {
           ))}
         </div>
 
-        {view === "map" && <FakeMap kitchens={kitchens} />}
+        {view === "map" && <LibyaMap youLabel={L("موقعك", "You")} kitchens={kitchens.map((k) => ({ ...k, label: lang === "ar" ? k.kitchen_name_ar : k.kitchen_name_en }))} />}
 
         {kitchens.length === 0 && <p className="py-10 text-center text-muted-foreground">{L("ما فيش حياش توا 😴", "No kitchens right now 😴")}</p>}
 
@@ -157,29 +158,6 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
     <button onClick={onClick} className={`whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold transition ${active ? "border-primary bg-primary text-primary-foreground" : "bg-card"}`}>
       {children}
     </button>
-  );
-}
-
-function FakeMap({ kitchens }: { kitchens: { id: string; lat: number; lng: number; avatar: string; dist: number; is_open: boolean }[] }) {
-  const { L } = useI18n();
-  const pos = (lat: number, lng: number) => ({ left: `${((lng - 13.1) / 0.12) * 100}%`, top: `${(1 - (lat - 32.85) / 0.05) * 100}%` });
-  return (
-    <div className="relative h-64 overflow-hidden rounded-3xl border map-grid" dir="ltr">
-      <div className="absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-accent/80 to-transparent text-center text-[10px] leading-8 text-muted-foreground">
-        {L("البحر المتوسط", "Mediterranean Sea")} 🌊
-      </div>
-      <div className="absolute" style={pos(ME.lat, ME.lng)}>
-        <span className="block h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-foreground bg-secondary ring-8 ring-secondary/20" />
-      </div>
-      {kitchens.map((k) => (
-        <Link key={k.id} to="/kitchen/$id" params={{ id: k.id }} className="absolute -translate-x-1/2 -translate-y-full" style={pos(k.lat, k.lng)}>
-          <div className={`flex items-center gap-1 rounded-full px-2 py-1 text-xs font-bold shadow-glow ${k.is_open ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
-            <span>{k.avatar}</span>{k.dist} km
-          </div>
-          <div className={`mx-auto h-2 w-2 rotate-45 -mt-1 ${k.is_open ? "bg-primary" : "bg-muted"}`} />
-        </Link>
-      ))}
-    </div>
   );
 }
 

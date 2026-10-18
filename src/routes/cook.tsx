@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Pencil, Trash2, Plus } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { CATEGORIES, COMMISSION, db, session, uid, type Product, type User } from "@/lib/store";
+import { CATEGORIES, COMMISSION, db, session, uid, walletMove, type Product, type User } from "@/lib/store";
+import { WalletPanel } from "@/components/wallet";
 import { beep, timeAgo } from "@/lib/time";
 import { Card, Img, LoginGate, PanelHeader, Stat, StatusPill, Tabs, btnGhost, btnPrimary, inputCls, money } from "@/components/nb";
 
@@ -32,7 +33,7 @@ function CookPage() {
 function CookApp({ user, logout }: { user: User; logout: () => void }) {
   const { L, lang } = useI18n();
   const data = db.use();
-  const [tab, setTab] = useState<"dash" | "menu" | "history">("dash");
+  const [tab, setTab] = useState<"dash" | "menu" | "history" | "wallet">("dash");
   const cook = data.cooks.find((c) => c.id === user.cook_id);
   const orders = data.orders.filter((o) => o.cook_id === user.cook_id);
   const pending = orders.filter((o) => o.status === "pending");
@@ -45,7 +46,11 @@ function CookApp({ user, logout }: { user: User; logout: () => void }) {
   if (!cook) return null;
   const today = orders.filter((o) => Date.now() - o.created_at < 864e5 && o.status !== "rejected");
   const earnings = today.reduce((s, o) => s + o.subtotal * (1 - COMMISSION), 0);
-  const setStatus = (id: string, patch: Partial<(typeof orders)[number]>) => db.set((d) => { const o = d.orders.find((x) => x.id === id); if (o) Object.assign(o, patch); });
+  const setStatus = (id: string, patch: Partial<(typeof orders)[number]>) => db.set((d) => {
+    const o = d.orders.find((x) => x.id === id); if (!o) return;
+    if (patch.status === "rejected" && o.payment === "wallet" && o.customer_id) walletMove(d, o.customer_id, o.total, "refund", `Order #${o.id.slice(-5).toUpperCase()}`);
+    Object.assign(o, patch);
+  });
 
   return (
     <div className="min-h-screen pb-10">
@@ -53,7 +58,7 @@ function CookApp({ user, logout }: { user: User; logout: () => void }) {
       <div className="space-y-4 p-4">
         {cook.banned && <p className="rounded-xl bg-destructive/15 p-3 text-sm text-destructive">{L("المطبخ موقوف من الإدارة", "Kitchen banned by admin")}</p>}
         {!cook.is_verified && <p className="rounded-xl bg-secondary/10 p-3 text-sm text-secondary">{L("المطبخ في انتظار التوثيق", "Kitchen awaiting verification")}</p>}
-        <Tabs value={tab} onChange={setTab} items={[{ id: "dash", label: L("الرئيسية", "Dashboard") }, { id: "menu", label: L("المنيو", "My Menu") }, { id: "history", label: L("السجل", "History") }]} />
+        <Tabs value={tab} onChange={setTab} items={[{ id: "dash", label: L("الرئيسية", "Dashboard") }, { id: "menu", label: L("المنيو", "My Menu") }, { id: "history", label: L("السجل", "History") }, { id: "wallet", label: L("المحفظة", "Wallet") }]} />
 
         {tab === "dash" && (<>
           <button onClick={() => db.set((d) => { const c = d.cooks.find((x) => x.id === cook.id)!; c.is_open = !c.is_open; })}
@@ -91,6 +96,7 @@ function CookApp({ user, logout }: { user: User; logout: () => void }) {
         </>)}
 
         {tab === "menu" && <MenuEditor cookId={cook.id} />}
+        {tab === "wallet" && <WalletPanel userId={user.id} />}
 
         {tab === "history" && orders.map((o) => (
           <Card key={o.id} className="flex items-center justify-between text-sm">

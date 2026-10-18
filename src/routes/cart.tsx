@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Minus, Plus, Trash2, LocateFixed } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { APP_FEE, DELIVERY_FEE, cart, db, session, uid, type Order } from "@/lib/store";
+import { APP_FEE, DELIVERY_FEE, cart, db, session, uid, walletMove, type Order } from "@/lib/store";
 import { BottomNav, Card, Img, TopBar, btnPrimary, inputCls, money } from "@/components/nb";
 
 export const Route = createFileRoute("/cart")({
@@ -30,6 +30,8 @@ function CartPage() {
   const [phone, setPhone] = useState(me?.phone ?? "");
   const [address, setAddress] = useState(me?.address ?? "");
   const [locating, setLocating] = useState(false);
+  const [pay, setPay] = useState<"cash" | "wallet">("cash");
+  const balance = me ? data.wallets[me.id] ?? 0 : 0;
   const cook = data.cooks.find((k) => k.id === c.cook_id);
   const lines = c.items.map((i) => ({ ...i, p: data.products.find((p) => p.id === i.product_id)! })).filter((l) => l.p);
   const subtotal = lines.reduce((s2, l) => s2 + l.qty * l.p.price_LYD, 0);
@@ -58,10 +60,12 @@ function CartPage() {
     const order: Order = {
       id: "o" + uid(), customer_id: me?.id, customer_name: name.trim(), customer_phone: phone.trim(), customer_address: address.trim(),
       cook_id: cook.id, items: lines.map((l) => ({ product_id: l.p.id, qty: l.qty, price: l.p.price_LYD, name_ar: l.p.name_ar, name_en: l.p.name_en })),
-      subtotal, delivery_fee: DELIVERY_FEE, app_fee: APP_FEE, total, status: "pending", ready: false, created_at: Date.now(),
+      subtotal, delivery_fee: DELIVERY_FEE, app_fee: APP_FEE, total, status: "pending", ready: false, created_at: Date.now(), payment: pay,
     };
+    if (pay === "wallet" && (!me || balance < total)) return alert(L("الرصيد ما يكفيش", "Not enough wallet balance"));
     db.set((d) => {
       d.orders.unshift(order);
+      if (pay === "wallet" && me) walletMove(d, me.id, -total, "payment", `Order #${order.id.slice(-5).toUpperCase()}`);
       lines.forEach((l) => { const p = d.products.find((x) => x.id === l.p.id); if (p) p.quantity_available = Math.max(0, p.quantity_available - l.qty); });
     });
     session.set((x) => { x.guestOrders = [order.id, ...(x.guestOrders ?? [])]; });
@@ -120,9 +124,14 @@ function CartPage() {
               <LocateFixed className={`h-5 w-5 ${locating ? "animate-spin" : ""}`} />
             </button>
           </div>
-          <div className="flex items-center gap-3 rounded-xl border border-primary bg-primary/10 p-3 text-sm">
-            <span className="text-xl">💵</span>
-            <div><div className="font-bold">{L("الدفع عند الاستلام", "Cash on Delivery")}</div><div className="text-xs text-muted-foreground">{L("حالياً كاش بس", "Cash only for now")}</div></div>
+          <div className="grid grid-cols-2 gap-2">
+            <button type="button" onClick={() => setPay("cash")} className={`rounded-xl border p-3 text-start text-sm ${pay === "cash" ? "border-primary bg-primary/10" : "bg-muted"}`}>
+              <div className="text-xl">💵</div><div className="font-bold">{L("كاش عند الاستلام", "Cash on Delivery")}</div>
+            </button>
+            <button type="button" disabled={!me} onClick={() => setPay("wallet")} className={`rounded-xl border p-3 text-start text-sm disabled:opacity-40 ${pay === "wallet" ? "border-primary bg-primary/10" : "bg-muted"}`}>
+              <div className="text-xl">👛</div><div className="font-bold">{L("المحفظة", "Wallet")}</div>
+              <div className={`text-xs ${me && balance < total ? "text-destructive" : "text-muted-foreground"}`}>{me ? money(balance, lang) : L("سجل دخول", "Sign in first")}</div>
+            </button>
           </div>
         </Card>
         <button className={`${btnPrimary} w-full text-lg`}>{t("checkout")} • {money(total, lang)}</button>

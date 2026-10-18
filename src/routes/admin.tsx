@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { APP_FEE, COMMISSION, db, isTonight, uid, type Role } from "@/lib/store";
 import { timeAgo } from "@/lib/time";
+import { AdminCards } from "@/components/admin-cards";
 import { Card, LoginGate, PanelHeader, Stat, StatusPill, Tabs, btnPrimary, inputCls, money } from "@/components/nb";
 
 export const Route = createFileRoute("/admin")({
@@ -19,7 +20,7 @@ export const Route = createFileRoute("/admin")({
   component: AdminPage,
 });
 
-type Tab = "dash" | "kitchens" | "orders" | "users" | "finance";
+type Tab = "dash" | "kitchens" | "orders" | "users" | "finance" | "cards";
 
 function AdminPage() {
   const { L, lang } = useI18n();
@@ -39,7 +40,8 @@ function AdminPage() {
           <div className="space-y-4 p-4">
             <Tabs value={tab} onChange={setTab} items={[
               { id: "dash", label: L("عام", "Overview") }, { id: "kitchens", label: L("المطابخ", "Kitchens") },
-              { id: "orders", label: L("الطلبات", "Orders") }, { id: "users", label: L("المستخدمين", "Users") }, { id: "finance", label: L("المالية", "Finance") }]} />
+              { id: "orders", label: L("الطلبات", "Orders") }, { id: "users", label: L("المستخدمين", "Users") }, { id: "finance", label: L("المالية", "Finance") }, { id: "cards", label: L("الكروت", "Cards") }]} />
+            {tab === "cards" && <AdminCards />}
 
             {tab === "dash" && (
               <div className="grid grid-cols-2 gap-3">
