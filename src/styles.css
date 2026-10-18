@@ -116,5 +116,6 @@
     width: 18px; height: 18px; border-radius: 9999px; background: var(--secondary);
     border: 3px solid var(--foreground); box-shadow: 0 0 0 8px oklch(0.86 0.18 90 / 0.25);
   }
+  .nb-tiles { filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9); }
   .leaflet-container { background: var(--card); font-family: var(--font-sans); }
 }
