@@ -24,7 +24,7 @@ export const Route = createFileRoute("/cook")({
 function CookPage() {
   const { L } = useI18n();
   return (
-    <LoginGate role="COOK" otp title={L("لوحة الطياب", "Cook Panel")} demo="fatima / 1234 · OTP: 0911111111 + 1234" extra={<CookRegister />}>
+    <LoginGate role="COOK" otp title={L("لوحة الطياب", "Cook Panel")} demo="fatima / 1234 · OTP: 0911111111 + 1234">
       {(user, logout) => <CookApp user={user} logout={logout} />}
     </LoginGate>
   );

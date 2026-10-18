@@ -42,11 +42,6 @@ function Account() {
                 </Card>
                 <WalletPanel userId={user.id} />
                 <Link to="/orders" className={`${btnPrimary} block text-center`}>{t("myOrders")}</Link>
-                <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                  <Link to="/cook" className={btnGhost}>👩‍🍳 {t("beCook")}</Link>
-                  <Link to="/delivery" className={btnGhost}>🏍️ {L("سايق", "Driver")}</Link>
-                  <Link to="/admin" className={btnGhost}>🛡️ {L("إدارة", "Admin")}</Link>
-                </div>
                 <button onClick={resetDemo} className="w-full text-xs text-muted-foreground underline">{L("إعادة البيانات التجريبية", "Reset demo data")}</button>
               </div>
             </div>
