@@ -1,10 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { MapPin, List, Map as MapIcon, Moon, ChefHat } from "lucide-react";
+import { MapPin, List, Map as MapIcon, ChefHat } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { db, distanceKm, CATEGORIES } from "@/lib/store";
 import { LibyaMap } from "@/components/LibyaMap";
-import { fmtCountdown, isOpenAt, nextChange, useNow } from "@/lib/time";
 import { BottomNav, Img, LangToggle, Logo, OpenBadge, Stars, money } from "@/components/nb";
 
 export const Route = createFileRoute("/")({
@@ -24,9 +23,6 @@ export const Route = createFileRoute("/")({
 function Home() {
   const { t, L, lang } = useI18n();
   const data = db.use();
-  const now = useNow();
-  const open = isOpenAt(now);
-  const [preview, setPreview] = useState(() => sessionStorage.getItem("nb_preview") === "1");
   const [onlyOpen, setOnlyOpen] = useState(true);
   const [cat, setCat] = useState<string | null>(null);
   const [view, setView] = useState<"list" | "map">("list");
@@ -37,44 +33,11 @@ function Home() {
     .map((c) => ({ ...c, dist: distanceKm(c.lat, c.lng) }))
     .sort((a, b) => a.dist - b.dist), [data, onlyOpen, cat]);
 
-  const countdown = fmtCountdown(nextChange(now).getTime() - now.getTime());
-
-  if (!open && !preview) {
-    return (
-      <div className="flex min-h-screen flex-col bg-night">
-        <div className="flex items-center justify-between p-4"><Logo /><LangToggle /></div>
-        <div className="flex flex-1 flex-col items-center justify-center gap-5 px-6 text-center">
-          <div className="text-8xl drop-shadow-[0_0_40px_oklch(0.86_0.18_90/0.5)]">🌙</div>
-          <h1 className="text-3xl font-black leading-tight">{L("نرجعو الساعة 10 في الليل", "We open at 10 PM")}</h1>
-          <p className="text-muted-foreground">{L("الحياش يطيبو من 10 الليل لين 5 الصبح", "Home kitchens cook from 10 PM to 5 AM")}</p>
-          <div className="rounded-2xl border bg-card px-6 py-4">
-            <div className="text-xs text-muted-foreground">{L("نفتحو بعد", "Opening in")}</div>
-            <div className="font-mono text-4xl font-black text-primary" dir="ltr">{countdown}</div>
-          </div>
-          <button onClick={() => { sessionStorage.setItem("nb_preview", "1"); setPreview(true); }}
-            className="text-sm font-semibold text-secondary underline underline-offset-4">
-            {L("شوف الحياش (وضع تجريبي)", "Browse anyway (demo mode)")}
-          </button>
-        </div>
-        <RoleLinks />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-night pb-24">
       <header className="space-y-3 p-4">
         <div className="flex items-center justify-between"><Logo /><LangToggle /></div>
-        <div className="flex items-center justify-between rounded-2xl border bg-card/80 px-3 py-2.5">
-          <div className="flex items-center gap-2 text-sm">
-            <Moon className="h-4 w-4 text-secondary" />
-            <span className="font-semibold">{L("فاتحين 10 الليل - 5 الصبح", "Open 10 PM - 5 AM")}</span>
-          </div>
-          <div className="text-end">
-            <div className="text-[10px] text-muted-foreground">{open ? L("نسكرو بعد", "Closes in") : L("تجريبي • نفتحو بعد", "Demo • opens in")}</div>
-            <div className="font-mono text-sm font-bold text-primary" dir="ltr">{countdown}</div>
-          </div>
-        </div>
       </header>
 
       <div className="space-y-3 px-4">
@@ -105,7 +68,7 @@ function Home() {
         {kitchens.length === 0 && <p className="py-10 text-center text-muted-foreground">{L("ما فيش حياش توا 😴", "No kitchens right now 😴")}</p>}
 
         {kitchens.map((k) => {
-          const prods = data.products.filter((p) => p.cook_id === k.id).slice(0, 3);
+          const prods = data.products.filter((p) => p.cook_id === k.id && !p.unavailable).slice(0, 3);
           return (
             <div key={k.id} className="overflow-hidden rounded-3xl border bg-card">
               <div className="relative h-28">
