@@ -78,9 +78,9 @@ async function fetchAll() {
   cache = {
     cooks: (cooks.data ?? []) as Cook[],
     products: (products.data ?? []) as Product[],
-    orders: (orders.data ?? []).map((o) => ({ ...o, customer_id: o.customer_id ?? undefined, delivery_boy: (o.delivery_boy ?? undefined) as Order["delivery_boy"], items: o.items as unknown as OrderItem[], payment: o.payment as Order["payment"], status: o.status as OrderStatus, created_at: Number(o.created_at) })),
+    orders: (orders.data ?? []).map((o) => ({ ...o, customer_id: o.customer_id ?? undefined, delivery_boy: (o.delivery_boy ?? undefined) as Order["delivery_boy"], items: o.items as unknown as OrderItem[], payment: o.payment as Order["payment"], status: o.status as OrderStatus, created_at: Number(o.created_at) })) as Order[],
     reviews: (reviews.data ?? []).map((r) => ({ ...r, created_at: Number(r.created_at) })),
-    users: (profiles.data ?? []).map((u) => ({ id: u.id, name: u.name, phone: u.phone, avatar: u.avatar, username: u.username, address: u.address, cook_id: u.cook_id ?? undefined, role: roleOf.get(u.id) ?? "CUSTOMER" })),
+    users: (profiles.data ?? []).map((u) => ({ id: u.id, name: u.name, phone: u.phone, avatar: u.avatar, username: u.username, address: u.address, cook_id: u.cook_id ?? undefined, role: roleOf.get(u.id) ?? "CUSTOMER" })) as User[],
     wallets: Object.fromEntries((wallets.data ?? []).map((w) => [w.user_id, w.balance])),
     transactions: (txns.data ?? []).map((t) => ({ ...t, type: t.type as Txn["type"], created_at: Number(t.created_at) })),
     cards: (cards.data ?? []).map((c) => ({ ...c, used_by: c.used_by ?? undefined, used_at: c.used_at ? Number(c.used_at) : undefined, created_at: Number(c.created_at) })),
