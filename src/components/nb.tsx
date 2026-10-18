@@ -1,6 +1,6 @@
 import { Link, useRouter } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
-import { Home, ShoppingBag, ReceiptText, User as UserIcon, ArrowLeft, ArrowRight, Star, LogOut } from "lucide-react";
+import { Home, ShoppingBag, ReceiptText, User as UserIcon, ArrowLeft, ArrowRight, Star, LogOut, type LucideIcon } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { cart, db, session, type OrderStatus, type Role, type User } from "@/lib/store";
 
@@ -145,6 +145,28 @@ export function Tabs<T extends string>({ value, onChange, items }: { value: T; o
     </div>
   );
 }
+
+/** Grid of icon buttons (not a strip) — used for panel sections. */
+export function IconTabs<T extends string>({ value, onChange, items, cols = 3 }: {
+  value: T; onChange: (v: T) => void; cols?: number;
+  items: { id: T; label: string; icon: LucideIcon }[];
+}) {
+  return (
+    <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
+      {items.map((i) => {
+        const on = value === i.id;
+        return (
+          <button key={i.id} onClick={() => onChange(i.id)} aria-pressed={on}
+            className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl border px-2 py-3 transition active:scale-[.97] ${on ? "border-primary bg-primary/15 text-primary shadow-glow" : "bg-card text-muted-foreground"}`}>
+            <i.icon className="h-5 w-5" />
+            <span className="text-[11px] font-bold leading-none">{i.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 
 /** Role-scoped login gate: each role has its own session & credentials. */
 export function LoginGate({ role, title, demo, otp, extra, children }: {

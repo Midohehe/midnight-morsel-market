@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { ChefHat, CreditCard, LayoutDashboard, ReceiptText, Wallet, Users as UsersIcon } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { APP_FEE, COMMISSION, db, isTonight, uid, type Role } from "@/lib/store";
 import { timeAgo } from "@/lib/time";
 import { AdminCards } from "@/components/admin-cards";
-import { Card, LoginGate, PanelHeader, Stat, StatusPill, Tabs, btnPrimary, inputCls, money } from "@/components/nb";
+import { Card, IconTabs, LoginGate, PanelHeader, Stat, StatusPill, btnPrimary, inputCls, money } from "@/components/nb";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -38,9 +39,13 @@ function AdminPage() {
         <div className="min-h-screen pb-10">
           <PanelHeader user={user} logout={logout} title={L("الإدارة", "Admin")} />
           <div className="space-y-4 p-4">
-            <Tabs value={tab} onChange={setTab} items={[
-              { id: "dash", label: L("عام", "Overview") }, { id: "kitchens", label: L("المطابخ", "Kitchens") },
-              { id: "orders", label: L("الطلبات", "Orders") }, { id: "users", label: L("المستخدمين", "Users") }, { id: "finance", label: L("المالية", "Finance") }, { id: "cards", label: L("الكروت", "Cards") }]} />
+            <IconTabs value={tab} onChange={setTab} items={[
+              { id: "dash", label: L("عام", "Overview"), icon: LayoutDashboard },
+              { id: "kitchens", label: L("المطابخ", "Kitchens"), icon: ChefHat },
+              { id: "orders", label: L("الطلبات", "Orders"), icon: ReceiptText },
+              { id: "users", label: L("المستخدمين", "Users"), icon: UsersIcon },
+              { id: "finance", label: L("المالية", "Finance"), icon: Wallet },
+              { id: "cards", label: L("الكروت", "Cards"), icon: CreditCard }]} />
             {tab === "cards" && <AdminCards />}
 
             {tab === "dash" && (
