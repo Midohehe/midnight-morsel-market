@@ -192,6 +192,15 @@ export const errText = (e: unknown, L: (ar: string, en: string) => string) => {
   return m;
 };
 
+function makeStore<T>(key: string, init: () => T) {
+  let c: T | null = null;
+  const ls = new Set<() => void>();
+  const get = (): T => { if (c === null) { const raw = typeof localStorage !== "undefined" ? localStorage.getItem(key) : null; c = raw ? (JSON.parse(raw) as T) : init(); } return c; };
+  const set = (fn: (d: T) => T | void) => { const d = structuredClone(get()); const r = fn(d); c = (r ?? d) as T; localStorage.setItem(key, JSON.stringify(c)); ls.forEach((l) => l()); };
+  const init0 = init();
+  const use = () => useSyncExternalStore((l) => { ls.add(l); return () => ls.delete(l); }, get, () => init0);
+  return { get, set, use };
+}
 export type Cart = { cook_id: string | null; items: { product_id: string; qty: number }[] };
 export const cart = makeStore<Cart>("nightbite_cart", () => ({ cook_id: null, items: [] }));
 export function distanceKm(lat: number, lng: number) {
