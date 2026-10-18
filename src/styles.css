@@ -104,3 +104,17 @@
     font: inherit;
   }
 }
+
+@layer components {
+  .nb-pin {
+    display: inline-block; white-space: nowrap; border-radius: 9999px; padding: 3px 8px;
+    font: 700 11px/1.4 var(--font-sans); background: var(--primary); color: var(--primary-foreground);
+    box-shadow: var(--shadow-glow); cursor: pointer;
+  }
+  .nb-pin-off { background: var(--muted); color: var(--muted-foreground); box-shadow: none; }
+  .nb-me {
+    width: 18px; height: 18px; border-radius: 9999px; background: var(--secondary);
+    border: 3px solid var(--foreground); box-shadow: 0 0 0 8px oklch(0.86 0.18 90 / 0.25);
+  }
+  .leaflet-container { background: var(--card); font-family: var(--font-sans); }
+}
