@@ -55,8 +55,10 @@ function Account() {
 
 function Register() {
   const { L } = useI18n();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [f, setF] = useState({ name: "", phone: "", address: "", username: "", password: "" });
+  const [role, setRole] = useState<Role>("CUSTOMER");
+  const [f, setF] = useState({ name: "", phone: "", address: "", username: "", password: "", kitchen: "" });
   const [err, setErr] = useState("");
   if (!open) return <button onClick={() => setOpen(true)} className="w-full text-center text-sm text-secondary underline">{L("ما عندكش حساب؟ سجل توا", "No account? Sign up")}</button>;
   const submit = (e: React.FormEvent) => {
@@ -64,16 +66,32 @@ function Register() {
     const username = f.username.trim().toLowerCase();
     if (db.get().users.some((u) => u.username === username)) return setErr(L("اليوزر مستعمل", "Username taken"));
     const id = "u_" + uid();
-    db.set((d) => { d.users.push({ id, role: "CUSTOMER", avatar: "🙂", ...f, username }); });
-    session.set((s) => { s.CUSTOMER = id; });
+    db.set((d) => {
+      if (role === "COOK") {
+        const cid = "c" + uid();
+        d.cooks.push({ id: cid, name: f.name, phone: f.phone, avatar: "🧑‍🍳", kitchen_name_ar: f.kitchen, kitchen_name_en: f.kitchen, address_ar: f.address, address_en: f.address, lat: 32.86 + Math.random() * 0.03, lng: 13.13 + Math.random() * 0.08, rating: 5, total_orders: 0, is_open: false, kitchen_video_url: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4", cover: "", is_verified: false, banned: false });
+        d.users.push({ id, name: f.name, phone: f.phone, address: f.address, role: "COOK", avatar: "🧑‍🍳", username, password: f.password, cook_id: cid });
+      } else {
+        d.users.push({ id, role, avatar: role === "DELIVERY" ? "🏍️" : "🙂", name: f.name, phone: f.phone, address: f.address, username, password: f.password });
+      }
+    });
+    session.set((s) => { s[role] = id; });
+    if (role === "COOK") router.navigate({ to: "/cook" });
+    else if (role === "DELIVERY") router.navigate({ to: "/delivery" });
   };
   return (
     <Card>
       <form onSubmit={submit} className="space-y-2">
         <h3 className="font-bold">{L("حساب جديد", "New account")}</h3>
-        {(["name", "phone", "address", "username", "password"] as const).map((k) => (
+        <Tabs value={role} onChange={(r) => { setRole(r); setErr(""); }}
+          items={[
+            { id: "CUSTOMER", label: `🙂 ${L("زبون", "Customer")}` },
+            { id: "COOK", label: `👩‍🍳 ${L("طباخ", "Cook")}` },
+            { id: "DELIVERY", label: `🏍️ ${L("سايق", "Driver")}` },
+          ]} />
+        {(["name", "phone", "address", ...(role === "COOK" ? ["kitchen"] as const : []), "username", "password"] as const).map((k) => (
           <input key={k} required={k !== "address"} type={k === "password" ? "password" : "text"} className={inputCls}
-            placeholder={{ name: L("الاسم", "Name"), phone: L("الهاتف", "Phone"), address: L("العنوان", "Address"), username: L("اسم المستخدم", "Username"), password: L("كلمة السر", "Password") }[k]}
+            placeholder={{ name: L("الاسم", "Name"), phone: L("الهاتف", "Phone"), address: L("العنوان", "Address"), kitchen: L("اسم المطبخ", "Kitchen name"), username: L("اسم المستخدم", "Username"), password: L("كلمة السر", "Password") }[k]}
             value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} />
         ))}
         {err && <p className="text-sm text-destructive">{err}</p>}
