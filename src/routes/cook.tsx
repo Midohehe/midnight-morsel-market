@@ -66,6 +66,11 @@ function CookApp({ user, logout }: { user: User; logout: () => void }) {
             <span>{cook.is_open ? L("🟢 المطبخ فاتح", "🟢 Kitchen is OPEN") : L("🔴 المطبخ مسكر", "🔴 Kitchen is CLOSED")}</span>
             <span className={`relative h-7 w-12 rounded-full ${cook.is_open ? "bg-success" : "bg-muted"}`}><span className={`absolute top-1 h-5 w-5 rounded-full bg-foreground transition-all ${cook.is_open ? "start-6" : "start-1"}`} /></span>
           </button>
+          <label className="relative block h-32 cursor-pointer overflow-hidden rounded-2xl border bg-card">
+            {cook.cover ? <Img src={cook.cover} alt="" className="h-full w-full" /> : <div className="grid h-full place-items-center text-sm text-muted-foreground">🖼️ {L("ضيف غلاف للمطبخ", "Upload kitchen cover")}</div>}
+            <span className="absolute bottom-2 end-2 rounded-full bg-background/80 px-3 py-1 text-xs font-bold">📷 {L("غيّر الغلاف", "Change cover")}</span>
+            <input type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; if (!f) return; const r = new FileReader(); r.onload = () => db.set((d) => { const c = d.cooks.find((x) => x.id === cook.id)!; c.cover = String(r.result); }); r.readAsDataURL(f); }} />
+          </label>
           <div className="grid grid-cols-3 gap-2">
             <Stat icon="💰" label={L("أرباح اليوم", "Today's earnings")} value={money(Math.round(earnings), lang)} />
             <Stat icon="🧾" label={L("طلبات اليوم", "Today's orders")} value={today.length} />
@@ -179,6 +184,10 @@ function MenuEditor({ cookId }: { cookId: string }) {
               <button onClick={() => setQty(p.id, 1)} className="h-6 w-6 rounded bg-muted">+</button>
             </div>
           </div>
+          <button onClick={() => db.set((d) => { const x = d.products.find((y) => y.id === p.id); if (x) x.unavailable = !x.unavailable; })}
+            className={`rounded-lg px-2 py-1.5 text-[11px] font-bold ${p.unavailable ? "bg-destructive/15 text-destructive" : "bg-success/15 text-success"}`}>
+            {p.unavailable ? L("غير متاح", "Unavailable") : L("متاح", "Available")}
+          </button>
           <button onClick={() => setEdit({ ...p })} className="rounded-lg bg-muted p-2"><Pencil className="h-4 w-4" /></button>
           <button onClick={() => confirm(L("نمسحوه؟", "Delete?")) && db.set((d) => { d.products = d.products.filter((x) => x.id !== p.id); })} className="rounded-lg bg-destructive/15 p-2 text-destructive"><Trash2 className="h-4 w-4" /></button>
         </Card>

@@ -14,7 +14,7 @@ export type Cook = {
 export type Product = {
   id: string; cook_id: string; name_ar: string; name_en: string;
   description_ar: string; description_en: string; price_LYD: number;
-  image_url: string; quantity_available: number; category: string;
+  image_url: string; quantity_available: number; category: string; unavailable?: boolean;
 };
 export type OrderStatus = "pending" | "cooking" | "on_way" | "delivered" | "rejected";
 export type OrderItem = { product_id: string; qty: number; price: number; name_ar: string; name_en: string };

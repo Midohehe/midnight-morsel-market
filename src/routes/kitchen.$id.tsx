@@ -71,7 +71,7 @@ function Kitchen() {
 
         <h2 className="pt-2 text-lg font-black">{L("المنيو", "Menu")} 🍽️</h2>
         {products.map((p) => {
-          const sold = p.quantity_available <= 0;
+          const sold = p.quantity_available <= 0 || !!p.unavailable;
           const inCart = c.cook_id === k.id ? c.items.find((i) => i.product_id === p.id)?.qty ?? 0 : 0;
           return (
             <div key={p.id} className={`flex gap-3 rounded-2xl border bg-card p-3 ${sold ? "opacity-50 grayscale" : ""}`}>
@@ -82,10 +82,10 @@ function Kitchen() {
                 <div className="mt-auto flex items-center justify-between pt-2">
                   <div>
                     <div className="font-black text-primary">{money(p.price_LYD, lang)}</div>
-                    <div className="text-[10px] text-muted-foreground">{sold ? t("soldOut") : `${t("available")}: ${p.quantity_available}`}</div>
+                    <div className="text-[10px] text-muted-foreground">{p.unavailable ? L("غير متاح", "Unavailable") : sold ? t("soldOut") : `${t("available")}: ${p.quantity_available}`}</div>
                   </div>
                   {sold ? (
-                    <span className="rounded-lg bg-muted px-3 py-1.5 text-xs font-bold text-muted-foreground">{t("soldOut")}</span>
+                    <span className="rounded-lg bg-muted px-3 py-1.5 text-xs font-bold text-muted-foreground">{p.unavailable ? L("غير متاح", "Unavailable") : t("soldOut")}</span>
                   ) : (
                     <button onClick={() => add(p.id, p.quantity_available)} className="flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground">
                       <Plus className="h-3.5 w-3.5" />{inCart ? `×${inCart}` : t("addToCart")}
