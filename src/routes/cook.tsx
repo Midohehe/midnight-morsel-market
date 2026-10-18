@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Pencil, Trash2, Plus } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { CATEGORIES, COMMISSION, db, uid, walletMove, type Product, type User } from "@/lib/store";
+import { CATEGORIES, COMMISSION, api, db, errText, type User } from "@/lib/store";
 import { WalletPanel } from "@/components/wallet";
 import { beep, timeAgo } from "@/lib/time";
 import { Card, Img, LoginGate, PanelHeader, Stat, StatusPill, Tabs, btnGhost, btnPrimary, inputCls, money } from "@/components/nb";
@@ -24,7 +24,7 @@ export const Route = createFileRoute("/cook")({
 function CookPage() {
   const { L } = useI18n();
   return (
-    <LoginGate role="COOK" otp title={L("لوحة الطياب", "Cook Panel")} demo="fatima / 1234 · OTP: 0911111111 + 1234">
+    <LoginGate role="COOK" title={L("لوحة الطياب", "Cook Panel")} demo="fatima / 1234 · salma · bouzid · housh">
       {(user, logout) => <CookApp user={user} logout={logout} />}
     </LoginGate>
   );
@@ -46,12 +46,7 @@ function CookApp({ user, logout }: { user: User; logout: () => void }) {
   if (!cook) return null;
   const today = orders.filter((o) => Date.now() - o.created_at < 864e5 && o.status !== "rejected");
   const earnings = today.reduce((s, o) => s + o.subtotal * (1 - COMMISSION), 0);
-  const setStatus = (id: string, patch: Partial<(typeof orders)[number]>) => db.set((d) => {
-    const o = d.orders.find((x) => x.id === id); if (!o) return;
-    if (patch.status === "rejected" && o.payment === "wallet" && o.customer_id) walletMove(d, o.customer_id, o.total, "refund", `Order #${o.id.slice(-5).toUpperCase()}`);
-    Object.assign(o, patch);
-  });
-
+  const act = (id: string, action: "accept" | "reject" | "ready") => api.cookOrder(id, action).catch((x) => alert(errText(x, L)));
   return (
     <div className="min-h-screen pb-10">
       <PanelHeader user={user} logout={logout} title={lang === "ar" ? cook.kitchen_name_ar : cook.kitchen_name_en} />
@@ -61,7 +56,7 @@ function CookApp({ user, logout }: { user: User; logout: () => void }) {
         <Tabs value={tab} onChange={setTab} items={[{ id: "dash", label: L("الرئيسية", "Dashboard") }, { id: "menu", label: L("المنيو", "My Menu") }, { id: "history", label: L("السجل", "History") }, { id: "wallet", label: L("المحفظة", "Wallet") }]} />
 
         {tab === "dash" && (<>
-          <button onClick={() => db.set((d) => { const c = d.cooks.find((x) => x.id === cook.id)!; c.is_open = !c.is_open; })}
+          <button onClick={() => api.patchCook(cook.id, { is_open: !cook.is_open })}
             className={`flex w-full items-center justify-between rounded-2xl p-4 font-bold ${cook.is_open ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"}`}>
             <span>{cook.is_open ? L("🟢 المطبخ فاتح", "🟢 Kitchen is OPEN") : L("🔴 المطبخ مسكر", "🔴 Kitchen is CLOSED")}</span>
             <span className={`relative h-7 w-12 rounded-full ${cook.is_open ? "bg-success" : "bg-muted"}`}><span className={`absolute top-1 h-5 w-5 rounded-full bg-foreground transition-all ${cook.is_open ? "start-6" : "start-1"}`} /></span>
@@ -69,7 +64,7 @@ function CookApp({ user, logout }: { user: User; logout: () => void }) {
           <label className="relative block h-32 cursor-pointer overflow-hidden rounded-2xl border bg-card">
             {cook.cover ? <Img src={cook.cover} alt="" className="h-full w-full" /> : <div className="grid h-full place-items-center text-sm text-muted-foreground">🖼️ {L("ضيف غلاف للمطبخ", "Upload kitchen cover")}</div>}
             <span className="absolute bottom-2 end-2 rounded-full bg-background/80 px-3 py-1 text-xs font-bold">📷 {L("غيّر الغلاف", "Change cover")}</span>
-            <input type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; if (!f) return; const r = new FileReader(); r.onload = () => db.set((d) => { const c = d.cooks.find((x) => x.id === cook.id)!; c.cover = String(r.result); }); r.readAsDataURL(f); }} />
+            <input type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; if (!f) return; api.upload(f).then((url) => api.patchCook(cook.id, { cover: url })).catch((x) => alert(errText(x, L))); }} />
           </label>
           <div className="grid grid-cols-3 gap-2">
             <Stat icon="💰" label={L("أرباح اليوم", "Today's earnings")} value={money(Math.round(earnings), lang)} />
@@ -85,8 +80,8 @@ function CookApp({ user, logout }: { user: User; logout: () => void }) {
               <div className="text-xs text-muted-foreground">📍 {o.customer_address}</div>
               <div className="font-bold text-primary">{money(o.subtotal, lang)}</div>
               <div className="grid grid-cols-2 gap-2">
-                <button onClick={() => setStatus(o.id, { status: "rejected" })} className="rounded-xl bg-destructive/15 py-2 font-bold text-destructive">{L("رفض", "Reject")}</button>
-                <button onClick={() => setStatus(o.id, { status: "cooking" })} className="rounded-xl bg-success py-2 font-bold text-success-foreground">{L("قبول", "Accept")}</button>
+                <button onClick={() => act(o.id, "reject")} className="rounded-xl bg-destructive/15 py-2 font-bold text-destructive">{L("رفض", "Reject")}</button>
+                <button onClick={() => act(o.id, "accept")} className="rounded-xl bg-success py-2 font-bold text-success-foreground">{L("قبول", "Accept")}</button>
               </div>
             </Card>
           ))}
@@ -95,7 +90,7 @@ function CookApp({ user, logout }: { user: User; logout: () => void }) {
             <Card key={o.id} className="flex items-center justify-between">
               <div className="text-sm"><b>{o.customer_name}</b><div className="text-xs text-muted-foreground">{o.items.map((i) => `${i.qty}× ${lang === "ar" ? i.name_ar : i.name_en}`).join("، ")}</div></div>
               {o.ready ? <span className="text-xs text-secondary">{L("نستنو السايق", "Awaiting driver")}</span> :
-                <button onClick={() => setStatus(o.id, { ready: true })} className="rounded-lg bg-secondary px-3 py-1.5 text-xs font-bold text-secondary-foreground">{L("جاهز ✓", "Ready ✓")}</button>}
+                <button onClick={() => act(o.id, "ready")} className="rounded-lg bg-secondary px-3 py-1.5 text-xs font-bold text-secondary-foreground">{L("جاهز ✓", "Ready ✓")}</button>}
             </Card>
           ))}
         </>)}
@@ -117,7 +112,7 @@ function CookApp({ user, logout }: { user: User; logout: () => void }) {
             <div className="text-5xl">🔔</div>
             <h3 className="text-xl font-black">{L("طلب جديد!", "New order!")}</h3>
             <p>{pending[0].customer_name} • {money(pending[0].subtotal, lang)}</p>
-            <button className={`${btnPrimary} w-full`} onClick={() => { setStatus(pending[0]!.id, { status: "cooking" }); setPopup(false); }}>{L("قبول", "Accept")}</button>
+            <button className={`${btnPrimary} w-full`} onClick={() => { act(pending[0]!.id, "accept"); setPopup(false); }}>{L("قبول", "Accept")}</button>
           </Card>
         </div>
       )}
@@ -132,16 +127,14 @@ function MenuEditor({ cookId }: { cookId: string }) {
   const data = db.use();
   const products = data.products.filter((p) => p.cook_id === cookId);
   const [edit, setEdit] = useState<(typeof empty & { id?: string }) | null>(null);
-  const setQty = (id: string, d: number) => db.set((x) => { const p = x.products.find((y) => y.id === id); if (p) p.quantity_available = Math.max(0, p.quantity_available + d); });
-  const save = (e: React.FormEvent) => {
+  const setQty = (id: string, d: number) => { const p = products.find((y) => y.id === id); if (p) void api.patchProduct(id, { quantity_available: Math.max(0, p.quantity_available + d) }); };
+  const save = async (e: React.FormEvent) => {
     e.preventDefault(); if (!edit) return;
-    db.set((d) => {
-      if (edit.id) Object.assign(d.products.find((p) => p.id === edit.id)!, edit);
-      else d.products.push({ ...edit, id: "p" + uid(), cook_id: cookId } as Product);
-    });
+    const { id, name_ar, name_en, description_ar, description_en, price_LYD, quantity_available, category, image_url } = edit;
+    try { await api.saveProduct({ ...(id ? { id } : {}), cook_id: cookId, name_ar, name_en, description_ar, description_en, price_LYD, quantity_available, category, image_url }); } catch (x) { return alert(errText(x, L)); }
     setEdit(null);
   };
-  const onFile = (f?: File) => { if (!f || !edit) return; const r = new FileReader(); r.onload = () => setEdit({ ...edit, image_url: String(r.result) }); r.readAsDataURL(f); };
+  const onFile = (f?: File) => { if (!f || !edit) return; api.upload(f).then((url) => setEdit((e) => e && { ...e, image_url: url })).catch((x) => alert(errText(x, L))); };
 
   if (edit) return (
     <Card>
@@ -184,12 +177,12 @@ function MenuEditor({ cookId }: { cookId: string }) {
               <button onClick={() => setQty(p.id, 1)} className="h-6 w-6 rounded bg-muted">+</button>
             </div>
           </div>
-          <button onClick={() => db.set((d) => { const x = d.products.find((y) => y.id === p.id); if (x) x.unavailable = !x.unavailable; })}
+          <button onClick={() => api.patchProduct(p.id, { unavailable: !p.unavailable })}
             className={`rounded-lg px-2 py-1.5 text-[11px] font-bold ${p.unavailable ? "bg-destructive/15 text-destructive" : "bg-success/15 text-success"}`}>
             {p.unavailable ? L("غير متاح", "Unavailable") : L("متاح", "Available")}
           </button>
           <button onClick={() => setEdit({ ...p })} className="rounded-lg bg-muted p-2"><Pencil className="h-4 w-4" /></button>
-          <button onClick={() => confirm(L("نمسحوه؟", "Delete?")) && db.set((d) => { d.products = d.products.filter((x) => x.id !== p.id); })} className="rounded-lg bg-destructive/15 p-2 text-destructive"><Trash2 className="h-4 w-4" /></button>
+          <button onClick={() => { if (confirm(L("نمسحوه؟", "Delete?"))) void api.deleteProduct(p.id); }} className="rounded-lg bg-destructive/15 p-2 text-destructive"><Trash2 className="h-4 w-4" /></button>
         </Card>
       ))}
     </div>

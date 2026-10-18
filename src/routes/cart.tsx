@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Minus, Plus, Trash2, LocateFixed } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { APP_FEE, DELIVERY_FEE, api, cart, db, errText, useAuth } from "@/lib/store";
@@ -30,6 +30,7 @@ function CartPage() {
   const [name, setName] = useState(me?.name ?? "");
   const [phone, setPhone] = useState(me?.phone ?? "");
   const [address, setAddress] = useState(me?.address ?? "");
+  useEffect(() => { if (me) { setName((v) => v || me.name); setPhone((v) => v || me.phone); setAddress((v) => v || (me.address ?? "")); } }, [me?.id]);
   const [locating, setLocating] = useState(false);
   const [pay, setPay] = useState<"cash" | "wallet">("cash");
   const balance = me ? data.wallets[me.id] ?? 0 : 0;
@@ -129,7 +130,7 @@ function CartPage() {
             </button>
           </div>
         </Card>
-        <button className={`${btnPrimary} w-full text-lg`}>{t("checkout")} • {money(total, lang)}</button>
+        <button disabled={busy} className={`${btnPrimary} w-full text-lg`}>{t("checkout")} • {money(total, lang)}</button>
       </form>
       <BottomNav />
     </div>
