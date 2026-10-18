@@ -87,7 +87,7 @@ function Register() {
             value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} />
         ))}
         {err && <p className="text-sm text-destructive">{err}</p>}
-        <button className={`${btnPrimary} w-full`}>{L("سجل", "Sign up")}</button>
+        <button disabled={busy} className={`${btnPrimary} w-full`}>{L("سجل", "Sign up")}</button>
       </form>
     </Card>
   );

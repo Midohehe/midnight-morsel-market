@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Minus, Plus, Trash2, LocateFixed } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { APP_FEE, DELIVERY_FEE, cart, db, session, uid, walletMove, type Order } from "@/lib/store";
+import { APP_FEE, DELIVERY_FEE, api, cart, db, errText, useAuth } from "@/lib/store";
 import { BottomNav, Card, Img, TopBar, btnPrimary, inputCls, money } from "@/components/nb";
 
 export const Route = createFileRoute("/cart")({
@@ -23,8 +23,9 @@ function CartPage() {
   const { t, L, lang } = useI18n();
   const data = db.use();
   const c = cart.use();
-  const s = session.use();
-  const me = data.users.find((u) => u.id === s.CUSTOMER);
+  const auth = useAuth();
+  const me = auth.role === "CUSTOMER" ? data.users.find((u) => u.id === auth.userId) : undefined;
+  const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
   const [name, setName] = useState(me?.name ?? "");
   const [phone, setPhone] = useState(me?.phone ?? "");
@@ -54,23 +55,17 @@ function CartPage() {
       () => done(L("📍 طرابلس - موقعي الحالي", "📍 Tripoli - current location")), { timeout: 5000 });
   };
 
-  const confirmOrder = (e: React.FormEvent) => {
+  const confirmOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!cook || !lines.length) return;
-    const order: Order = {
-      id: "o" + uid(), customer_id: me?.id, customer_name: name.trim(), customer_phone: phone.trim(), customer_address: address.trim(),
-      cook_id: cook.id, items: lines.map((l) => ({ product_id: l.p.id, qty: l.qty, price: l.p.price_LYD, name_ar: l.p.name_ar, name_en: l.p.name_en })),
-      subtotal, delivery_fee: DELIVERY_FEE, app_fee: APP_FEE, total, status: "pending", ready: false, created_at: Date.now(), payment: pay,
-    };
-    if (pay === "wallet" && (!me || balance < total)) return alert(L("الرصيد ما يكفيش", "Not enough wallet balance"));
-    db.set((d) => {
-      d.orders.unshift(order);
-      if (pay === "wallet" && me) walletMove(d, me.id, -total, "payment", `Order #${order.id.slice(-5).toUpperCase()}`);
-      lines.forEach((l) => { const p = d.products.find((x) => x.id === l.p.id); if (p) p.quantity_available = Math.max(0, p.quantity_available - l.qty); });
-    });
-    session.set((x) => { x.guestOrders = [order.id, ...(x.guestOrders ?? [])]; });
-    cart.set(() => ({ cook_id: null, items: [] }));
-    navigate({ to: "/orders" });
+    if (!me) { alert(L("سجل دخولك من حسابي باش تطلب", "Sign in from My Account to order")); return navigate({ to: "/account" }); }
+    if (pay === "wallet" && balance < total) return alert(L("الرصيد ما يكفيش", "Not enough wallet balance"));
+    setBusy(true);
+    try {
+      await api.placeOrder({ cook_id: cook.id, items: lines.map((l) => ({ product_id: l.p.id, qty: l.qty })), name: name.trim(), phone: phone.trim(), address: address.trim(), payment: pay });
+      cart.set(() => ({ cook_id: null, items: [] }));
+      navigate({ to: "/orders" });
+    } catch (x) { alert(errText(x, L)); } finally { setBusy(false); }
   };
 
   if (!lines.length) return (
