@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { ChefHat, CreditCard, LayoutDashboard, ReceiptText, UserRound, Wallet, Users as UsersIcon } from "lucide-react";
+import { ChefHat, CreditCard, LayoutDashboard, ReceiptText, Wallet, Users as UsersIcon } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { APP_FEE, COMMISSION, db, isTonight, uid, type Role } from "@/lib/store";
 import { timeAgo } from "@/lib/time";
