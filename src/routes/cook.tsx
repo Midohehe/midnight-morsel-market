@@ -196,34 +196,3 @@ function MenuEditor({ cookId }: { cookId: string }) {
   );
 }
 
-function CookRegister() {
-  const { L, t } = useI18n();
-  const [open, setOpen] = useState(false);
-  const [f, setF] = useState({ name: "", kitchen: "", phone: "", address: "", username: "", password: "" });
-  const [err, setErr] = useState("");
-  if (!open) return <button onClick={() => setOpen(true)} className="w-full text-sm text-secondary underline">👩‍🍳 {t("beCook")}</button>;
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const username = f.username.trim().toLowerCase();
-    if (db.get().users.some((u) => u.username === username)) return setErr(L("اليوزر مستعمل", "Username taken"));
-    const cid = "c" + uid(), id = "u_" + uid();
-    db.set((d) => {
-      d.cooks.push({ id: cid, name: f.name, phone: f.phone, avatar: "🧑‍🍳", kitchen_name_ar: f.kitchen, kitchen_name_en: f.kitchen, address_ar: f.address, address_en: f.address, lat: 32.86 + Math.random() * 0.03, lng: 13.13 + Math.random() * 0.08, rating: 5, total_orders: 0, is_open: false, kitchen_video_url: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4", cover: "", is_verified: false, banned: false });
-      d.users.push({ id, name: f.name, phone: f.phone, role: "COOK", avatar: "🧑‍🍳", username, password: f.password, cook_id: cid });
-    });
-    session.set((s) => { s.COOK = id; });
-  };
-  const labels = { name: L("اسمك", "Your name"), kitchen: L("اسم المطبخ", "Kitchen name"), phone: L("الهاتف", "Phone"), address: L("الحي", "Area"), username: L("اسم المستخدم", "Username"), password: L("كلمة السر", "Password") };
-  return (
-    <Card>
-      <form onSubmit={submit} className="space-y-2">
-        <h3 className="font-bold">{t("beCook")}</h3>
-        {(Object.keys(labels) as (keyof typeof labels)[]).map((k) => (
-          <input key={k} required type={k === "password" ? "password" : "text"} className={inputCls} placeholder={labels[k]} value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} />
-        ))}
-        {err && <p className="text-sm text-destructive">{err}</p>}
-        <button className={`${btnPrimary} w-full`}>{L("سجل مطبخك", "Register kitchen")}</button>
-      </form>
-    </Card>
-  );
-}
