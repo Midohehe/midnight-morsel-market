@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Pencil, Trash2, Plus } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { CATEGORIES, COMMISSION, db, session, uid, walletMove, type Product, type User } from "@/lib/store";
+import { CATEGORIES, COMMISSION, db, uid, walletMove, type Product, type User } from "@/lib/store";
 import { WalletPanel } from "@/components/wallet";
 import { beep, timeAgo } from "@/lib/time";
 import { Card, Img, LoginGate, PanelHeader, Stat, StatusPill, Tabs, btnGhost, btnPrimary, inputCls, money } from "@/components/nb";
