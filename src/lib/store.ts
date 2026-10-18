@@ -21,16 +21,19 @@ export type OrderItem = { product_id: string; qty: number; price: number; name_a
 export type Order = {
   id: string; customer_id?: string | undefined; customer_name: string; customer_phone: string; customer_address: string;
   cook_id: string; items: OrderItem[]; subtotal: number; delivery_fee: number; app_fee: number; total: number;
-  status: OrderStatus; ready: boolean; created_at: number;
+  status: OrderStatus; ready: boolean; payment?: "cash" | "wallet"; created_at: number;
   delivery_boy?: { id: string; name: string; phone: string }; rated?: boolean;
 };
 export type Review = { id: string; cook_id: string; order_id: string; rating: number; comment: string; created_at: number };
-export type DB = { cooks: Cook[]; products: Product[]; orders: Order[]; users: User[]; reviews: Review[] };
+export type Txn = { id: string; user_id: string; amount: number; type: "topup" | "payment" | "refund" | "earning"; note: string; created_at: number };
+export type TopupCard = { id: string; code: string; amount: number; batch: string; created_at: number; used_by?: string | undefined; used_at?: number | undefined };
+export type DB = { cooks: Cook[]; products: Product[]; orders: Order[]; users: User[]; reviews: Review[]; wallets: Record<string, number>; transactions: Txn[]; cards: TopupCard[] };
 
 export const DELIVERY_FEE = 5;
 export const APP_FEE = 2;
 export const COMMISSION = 0.2;
-export const ME = { lat: 32.875, lng: 13.19 };
+export const ME = { lat: 32.8955, lng: 13.18 }; // Martyrs' Square, Tripoli
+const COORDS: Record<string, [number, number]> = { c1: [32.853, 13.064], c2: [32.87, 13.125], c3: [32.879, 13.201], c4: [32.86, 13.13] };
 
 export const uid = () => Math.random().toString(36).slice(2, 9);
 const img = (id: string) => `https://images.unsplash.com/photo-${id}?w=600&q=70&auto=format&fit=crop`;
@@ -88,10 +91,11 @@ function seed(): DB {
     { id: "o1001", customer_id: "u_cu1", customer_name: "Ahmed", customer_phone: "0917777777", customer_address: "Zawiyat Al Dahmani, Tripoli", cook_id: "c1", items: [{ product_id: "p1", qty: 2, price: 8, name_ar: "سندويتش تن وجبنة", name_en: "Tuna Cheese Sandwich" }, { product_id: "p4", qty: 2, price: 3, name_ar: "شاهي بالنعناع", name_en: "Mint Tea" }], subtotal: 22, delivery_fee: 5, app_fee: 2, total: 29, status: "pending", ready: false, created_at: now - 4 * 60000 },
     { id: "o1002", customer_name: "Mariam", customer_phone: "0928888888", customer_address: "Fashloum, Tripoli", cook_id: "c2", items: [{ product_id: "p5", qty: 1, price: 12, name_ar: "شكشوكة بالعظم", name_en: "Egg Shakshuka" }, { product_id: "p7", qty: 3, price: 5, name_ar: "بريك بالعظم", name_en: "Egg Brik" }], subtotal: 27, delivery_fee: 5, app_fee: 2, total: 34, status: "pending", ready: false, created_at: now - 9 * 60000 },
   ];
-  return { cooks, products, users, orders, reviews: [] };
+  cooks.forEach((c) => { const x = COORDS[c.id]; if (x) { c.lat = x[0]; c.lng = x[1]; } });
+  return { cooks, products, users, orders, reviews: [], wallets: { u_cu1: 50 }, transactions: [{ id: "t0", user_id: "u_cu1", amount: 50, type: "topup", note: "Welcome bonus", created_at: now }], cards: [] };
 }
 
-function makeStore<T>(key: string, init: () => T) {
+function makeStore<T>(key: string, init: () => T, migrate?: (d: T) => T) {
   let cache: T | null = null;
   const listeners = new Set<() => void>();
   let bound = false;
@@ -99,6 +103,7 @@ function makeStore<T>(key: string, init: () => T) {
     if (cache === null) {
       const raw = localStorage.getItem(key);
       cache = raw ? (JSON.parse(raw) as T) : init();
+      if (migrate) cache = migrate(cache);
       if (!raw) localStorage.setItem(key, JSON.stringify(cache));
     }
     return cache;
@@ -124,7 +129,43 @@ function makeStore<T>(key: string, init: () => T) {
   return { get, set, use };
 }
 
-export const db = makeStore<DB>("nightbite_db_v1", seed);
+export const db = makeStore<DB>("nightbite_db_v1", seed, (d) => {
+  d.wallets ??= {}; d.transactions ??= []; d.cards ??= [];
+  d.cooks.forEach((c) => { const x = COORDS[c.id]; if (x) { c.lat = x[0]; c.lng = x[1]; } });
+  return d;
+});
+
+/** Mutates a draft DB: changes a user's wallet balance and logs the movement. */
+export function walletMove(d: DB, user_id: string, amount: number, type: Txn["type"], note: string) {
+  d.wallets[user_id] = Math.round(((d.wallets[user_id] ?? 0) + amount) * 100) / 100;
+  d.transactions.unshift({ id: "t" + uid(), user_id, amount, type, note, created_at: Date.now() });
+}
+
+export function genCardCode() {
+  let s = ""; for (let i = 0; i < 16; i++) s += Math.floor(Math.random() * 10);
+  return s.replace(/(\d{4})(?=\d)/g, "$1-");
+}
+
+export function redeemCard(user_id: string, raw: string): { ok: true; amount: number } | { ok: false; reason: "invalid" | "used" } {
+  const code = raw.replace(/\D/g, "");
+  const card = db.get().cards.find((c) => c.code.replace(/\D/g, "") === code);
+  if (!card) return { ok: false, reason: "invalid" };
+  if (card.used_by) return { ok: false, reason: "used" };
+  db.set((d) => {
+    const c = d.cards.find((x) => x.id === card.id)!;
+    c.used_by = user_id; c.used_at = Date.now();
+    walletMove(d, user_id, c.amount, "topup", `Card ${c.code.slice(-4)}`);
+  });
+  return { ok: true, amount: card.amount };
+}
+
+/** Settles a delivered wallet-paid order: cook gets food minus commission, driver gets delivery fee. */
+export function settleDelivered(d: DB, o: Order) {
+  if (o.payment !== "wallet") return;
+  const cookUser = d.users.find((u) => u.role === "COOK" && u.cook_id === o.cook_id);
+  if (cookUser) walletMove(d, cookUser.id, Math.round(o.subtotal * (1 - COMMISSION) * 100) / 100, "earning", `Order #${o.id.slice(-5).toUpperCase()}`);
+  if (o.delivery_boy) walletMove(d, o.delivery_boy.id, o.delivery_fee, "earning", `Delivery #${o.id.slice(-5).toUpperCase()}`);
+}
 export type Cart = { cook_id: string | null; items: { product_id: string; qty: number }[] };
 export const cart = makeStore<Cart>("nightbite_cart", () => ({ cook_id: null, items: [] }));
 export type Session = Partial<Record<Role, string>> & { guestOrders?: string[] };
