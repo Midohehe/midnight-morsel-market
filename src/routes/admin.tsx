@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { ChefHat, CreditCard, LayoutDashboard, ReceiptText, UserRound, Wallet, Users as UsersIcon } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { APP_FEE, COMMISSION, db, isTonight, uid, type Role } from "@/lib/store";
 import { timeAgo } from "@/lib/time";
 import { AdminCards } from "@/components/admin-cards";
-import { Card, LoginGate, PanelHeader, Stat, StatusPill, Tabs, btnPrimary, inputCls, money } from "@/components/nb";
+import { Card, IconTabs, LoginGate, PanelHeader, Stat, StatusPill, btnPrimary, inputCls, money } from "@/components/nb";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
