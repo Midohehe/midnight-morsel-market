@@ -56,13 +56,6 @@ function Home() {
           </button>
         </label>
 
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
-          <Chip active={!cat} onClick={() => setCat(null)}>🍽️ {L("الكل", "All")}</Chip>
-          {CATEGORIES.map((c) => (
-            <Chip key={c.id} active={cat === c.id} onClick={() => setCat(c.id)}>{c.icon} {lang === "ar" ? c.ar : c.en}</Chip>
-          ))}
-        </div>
-
         {view === "map" && <LibyaMap youLabel={L("موقعك", "You")} kitchens={kitchens.map((k) => ({ ...k, label: lang === "ar" ? k.kitchen_name_ar : k.kitchen_name_en }))} />}
 
         {kitchens.length === 0 && <p className="py-10 text-center text-muted-foreground">{L("ما فيش حياش توا 😴", "No kitchens right now 😴")}</p>}
