@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Wallet as WalletIcon } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { db, redeemCard } from "@/lib/store";
+import { api, db, errText } from "@/lib/store";
 import { timeAgo } from "@/lib/time";
 import { Card, btnPrimary, inputCls, money } from "@/components/nb";
 
@@ -15,11 +15,10 @@ export function WalletPanel({ userId }: { userId: string }) {
   const balance = data.wallets[userId] ?? 0;
   const txns = data.transactions.filter((t) => t.user_id === userId).slice(0, 20);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const r = redeemCard(userId, code);
-    if (r.ok) { setMsg({ ok: true, text: L(`تمت تعبئة ${r.amount} د.ل ✓`, `Added ${r.amount} LYD ✓`) }); setCode(""); }
-    else setMsg({ ok: false, text: r.reason === "used" ? L("الكرت مستعمل", "Card already used") : L("رقم الكرت غلط", "Invalid card number") });
+    try { const amount = await api.redeem(code); setMsg({ ok: true, text: L(`تمت تعبئة ${amount} د.ل ✓`, `Added ${amount} LYD ✓`) }); setCode(""); }
+    catch (x) { setMsg({ ok: false, text: errText(x, L) }); }
   };
 
   return (

@@ -2,7 +2,7 @@ import { Link, useRouter } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
 import { Home, ShoppingBag, ReceiptText, User as UserIcon, ArrowLeft, ArrowRight, Star, LogOut, type LucideIcon } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { cart, db, session, type OrderStatus, type Role, type User } from "@/lib/store";
+import { api, cart, db, errText, useAuth, type OrderStatus, type Role, type User } from "@/lib/store";
 
 export function Logo({ small }: { small?: boolean }) {
   const { t } = useI18n();
@@ -168,35 +168,24 @@ export function IconTabs<T extends string>({ value, onChange, items, cols = 3 }:
 }
 
 
-/** Role-scoped login gate: each role has its own session & credentials. */
-export function LoginGate({ role, title, demo, otp, extra, children }: {
+/** Role-scoped login gate backed by real accounts. */
+export function LoginGate({ role, title, demo, extra, children }: {
   role: Role; title: string; demo: string; otp?: boolean; extra?: ReactNode;
   children: (user: User, logout: () => void) => ReactNode;
 }) {
   const { L } = useI18n();
-  const s = session.use();
+  const auth = useAuth();
   const data = db.use();
-  const user = data.users.find((u) => u.id === s[role] && u.role === role);
-  const [mode, setMode] = useState<"pass" | "otp">("pass");
   const [u, setU] = useState(""); const [p, setP] = useState("");
-  const [otpSent, setOtpSent] = useState(false); const [code, setCode] = useState("");
-  const [err, setErr] = useState("");
-  const logout = () => session.set((x) => { delete x[role]; });
-  if (user) return <>{children(user, logout)}</>;
+  const [err, setErr] = useState(""); const [busy, setBusy] = useState(false);
+  const logout = () => { void api.signOut(); };
+  const me = data.users.find((x) => x.id === auth.userId);
+  if (!auth.ready || (auth.userId && !me && !db.loaded())) return <div className="grid min-h-screen place-items-center text-muted-foreground">…</div>;
+  if (me && auth.role === role) return <>{children({ ...me, role }, logout)}</>;
 
-  const login = (found?: User) => {
-    if (!found) return setErr(L("بيانات غلط", "Wrong credentials"));
-    session.set((x) => { x[role] = found.id; });
-  };
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault(); setErr("");
-    if (mode === "pass") return login(data.users.find((x) => x.role === role && x.username === u.trim().toLowerCase() && x.password === p));
-    if (!otpSent) {
-      if (!data.users.some((x) => x.role === role && x.phone === u.trim())) return setErr(L("الرقم مش مسجل", "Phone not registered"));
-      return setOtpSent(true);
-    }
-    if (code !== "1234") return setErr(L("الكود غلط", "Wrong code"));
-    login(data.users.find((x) => x.role === role && x.phone === u.trim()));
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault(); setErr(""); setBusy(true);
+    try { await api.signIn(u, p); } catch (x) { setErr(errText(x, L)); } finally { setBusy(false); }
   };
 
   return (
@@ -204,23 +193,24 @@ export function LoginGate({ role, title, demo, otp, extra, children }: {
       <TopBar title={title} />
       <div className="space-y-5 p-5 pt-10">
         <div className="text-center"><Logo /></div>
-        <Card className="space-y-3">
-          {otp && <Tabs value={mode} onChange={(m) => { setMode(m); setOtpSent(false); setErr(""); }}
-            items={[{ id: "pass", label: L("يوزر وباسورد", "Username") }, { id: "otp", label: L("رقم + كود", "Phone + OTP") }]} />}
-          <form onSubmit={submit} className="space-y-3">
-            {mode === "pass" ? (<>
+        {me && auth.role !== role && (
+          <Card className="space-y-2 text-center text-sm">
+            <p>{L("أنت داخل بحساب آخر", "You're signed in with another account")}: <b>@{me.username}</b></p>
+            <button onClick={logout} className={`${btnGhost} w-full`}>{L("خروج", "Sign out")}</button>
+          </Card>
+        )}
+        {!me && (
+          <Card className="space-y-3">
+            <form onSubmit={submit} className="space-y-3">
               <input className={inputCls} placeholder={L("اسم المستخدم", "Username")} value={u} onChange={(e) => setU(e.target.value)} autoCapitalize="none" />
               <input className={inputCls} type="password" placeholder={L("كلمة السر", "Password")} value={p} onChange={(e) => setP(e.target.value)} />
-            </>) : (<>
-              <input className={inputCls} inputMode="tel" placeholder={L("رقم الهاتف", "Phone")} value={u} onChange={(e) => setU(e.target.value)} disabled={otpSent} />
-              {otpSent && <input className={inputCls} inputMode="numeric" placeholder={L("كود التحقق (1234)", "OTP code (1234)")} value={code} onChange={(e) => setCode(e.target.value)} />}
-            </>)}
-            {err && <p className="text-sm text-destructive">{err}</p>}
-            <button className={`${btnPrimary} w-full`}>{mode === "otp" && !otpSent ? L("أبعث الكود", "Send code") : L("دخول", "Sign in")}</button>
-          </form>
-          <p className="rounded-lg bg-muted p-2 text-center text-[11px] text-muted-foreground" dir="ltr">Demo: {demo}</p>
-        </Card>
-        {extra}
+              {err && <p className="text-sm text-destructive">{err}</p>}
+              <button disabled={busy} className={`${btnPrimary} w-full`}>{L("دخول", "Sign in")}</button>
+            </form>
+            <p className="rounded-lg bg-muted p-2 text-center text-[11px] text-muted-foreground" dir="ltr">Demo: {demo}</p>
+          </Card>
+        )}
+        {!me && extra}
       </div>
     </div>
   );

@@ -14,16 +14,397 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      cooks: {
+        Row: {
+          address_ar: string
+          address_en: string
+          avatar: string
+          banned: boolean
+          cover: string
+          id: string
+          is_open: boolean
+          is_verified: boolean
+          kitchen_name_ar: string
+          kitchen_name_en: string
+          kitchen_video_url: string
+          lat: number
+          lng: number
+          name: string
+          phone: string
+          rating: number
+          total_orders: number
+          user_id: string | null
+        }
+        Insert: {
+          address_ar?: string
+          address_en?: string
+          avatar?: string
+          banned?: boolean
+          cover?: string
+          id?: string
+          is_open?: boolean
+          is_verified?: boolean
+          kitchen_name_ar?: string
+          kitchen_name_en?: string
+          kitchen_video_url?: string
+          lat?: number
+          lng?: number
+          name?: string
+          phone?: string
+          rating?: number
+          total_orders?: number
+          user_id?: string | null
+        }
+        Update: {
+          address_ar?: string
+          address_en?: string
+          avatar?: string
+          banned?: boolean
+          cover?: string
+          id?: string
+          is_open?: boolean
+          is_verified?: boolean
+          kitchen_name_ar?: string
+          kitchen_name_en?: string
+          kitchen_video_url?: string
+          lat?: number
+          lng?: number
+          name?: string
+          phone?: string
+          rating?: number
+          total_orders?: number
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      orders: {
+        Row: {
+          app_fee: number
+          cook_id: string
+          created_at: number
+          customer_address: string
+          customer_id: string | null
+          customer_name: string
+          customer_phone: string
+          delivery_boy: Json | null
+          delivery_boy_id: string | null
+          delivery_fee: number
+          id: string
+          items: Json
+          payment: string
+          rated: boolean
+          ready: boolean
+          status: string
+          subtotal: number
+          total: number
+        }
+        Insert: {
+          app_fee?: number
+          cook_id: string
+          created_at?: number
+          customer_address?: string
+          customer_id?: string | null
+          customer_name?: string
+          customer_phone?: string
+          delivery_boy?: Json | null
+          delivery_boy_id?: string | null
+          delivery_fee?: number
+          id?: string
+          items?: Json
+          payment?: string
+          rated?: boolean
+          ready?: boolean
+          status?: string
+          subtotal?: number
+          total?: number
+        }
+        Update: {
+          app_fee?: number
+          cook_id?: string
+          created_at?: number
+          customer_address?: string
+          customer_id?: string | null
+          customer_name?: string
+          customer_phone?: string
+          delivery_boy?: Json | null
+          delivery_boy_id?: string | null
+          delivery_fee?: number
+          id?: string
+          items?: Json
+          payment?: string
+          rated?: boolean
+          ready?: boolean
+          status?: string
+          subtotal?: number
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_cook_id_fkey"
+            columns: ["cook_id"]
+            isOneToOne: false
+            referencedRelation: "cooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          category: string
+          cook_id: string
+          description_ar: string
+          description_en: string
+          id: string
+          image_url: string
+          name_ar: string
+          name_en: string
+          price_LYD: number
+          quantity_available: number
+          unavailable: boolean
+        }
+        Insert: {
+          category?: string
+          cook_id: string
+          description_ar?: string
+          description_en?: string
+          id?: string
+          image_url?: string
+          name_ar?: string
+          name_en?: string
+          price_LYD?: number
+          quantity_available?: number
+          unavailable?: boolean
+        }
+        Update: {
+          category?: string
+          cook_id?: string
+          description_ar?: string
+          description_en?: string
+          id?: string
+          image_url?: string
+          name_ar?: string
+          name_en?: string
+          price_LYD?: number
+          quantity_available?: number
+          unavailable?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_cook_id_fkey"
+            columns: ["cook_id"]
+            isOneToOne: false
+            referencedRelation: "cooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          address: string
+          avatar: string
+          cook_id: string | null
+          created_at: number
+          id: string
+          name: string
+          phone: string
+          username: string
+        }
+        Insert: {
+          address?: string
+          avatar?: string
+          cook_id?: string | null
+          created_at?: number
+          id: string
+          name?: string
+          phone?: string
+          username: string
+        }
+        Update: {
+          address?: string
+          avatar?: string
+          cook_id?: string | null
+          created_at?: number
+          id?: string
+          name?: string
+          phone?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      reviews: {
+        Row: {
+          comment: string
+          cook_id: string
+          created_at: number
+          id: string
+          order_id: string
+          rating: number
+        }
+        Insert: {
+          comment?: string
+          cook_id: string
+          created_at?: number
+          id?: string
+          order_id: string
+          rating: number
+        }
+        Update: {
+          comment?: string
+          cook_id?: string
+          created_at?: number
+          id?: string
+          order_id?: string
+          rating?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_cook_id_fkey"
+            columns: ["cook_id"]
+            isOneToOne: false
+            referencedRelation: "cooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      topup_cards: {
+        Row: {
+          amount: number
+          batch: string
+          code: string
+          created_at: number
+          id: string
+          used_at: number | null
+          used_by: string | null
+        }
+        Insert: {
+          amount: number
+          batch?: string
+          code: string
+          created_at?: number
+          id?: string
+          used_at?: number | null
+          used_by?: string | null
+        }
+        Update: {
+          amount?: number
+          batch?: string
+          code?: string
+          created_at?: number
+          id?: string
+          used_at?: number | null
+          used_by?: string | null
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          amount: number
+          created_at: number
+          id: string
+          note: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: number
+          id?: string
+          note?: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: number
+          id?: string
+          note?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wallets: {
+        Row: {
+          balance: number
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      _wallet_move: {
+        Args: { _amount: number; _note: string; _type: string; _uid: string }
+        Returns: undefined
+      }
+      admin_issue_cards: {
+        Args: { _amount: number; _batch: string; _qty: number }
+        Returns: number
+      }
+      cook_update_order: {
+        Args: { _action: string; _order_id: string }
+        Returns: undefined
+      }
+      driver_deliver: { Args: { _order_id: string }; Returns: undefined }
+      driver_take: { Args: { _order_id: string }; Returns: undefined }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      now_ms: { Args: never; Returns: number }
+      owns_cook: { Args: { _cook_id: string }; Returns: boolean }
+      place_order: {
+        Args: {
+          _address: string
+          _cook_id: string
+          _items: Json
+          _name: string
+          _payment: string
+          _phone: string
+        }
+        Returns: string
+      }
+      rate_order: {
+        Args: { _comment: string; _order_id: string; _rating: number }
+        Returns: undefined
+      }
+      redeem_card: { Args: { _code: string }; Returns: number }
+      short_id: { Args: never; Returns: string }
+      username_taken: { Args: { _u: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "ADMIN" | "COOK" | "DELIVERY" | "CUSTOMER"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +531,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["ADMIN", "COOK", "DELIVERY", "CUSTOMER"],
+    },
   },
 } as const

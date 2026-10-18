@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n";
-import { db, resetDemo, session, uid, type Role } from "@/lib/store";
+import { api, db, errText, type Role } from "@/lib/store";
 import { WalletPanel } from "@/components/wallet";
 import { BottomNav, Card, LoginGate, PanelHeader, Stat, Tabs, btnPrimary, inputCls } from "@/components/nb";
 
@@ -42,7 +42,6 @@ function Account() {
                 </Card>
                 <WalletPanel userId={user.id} />
                 <Link to="/orders" className={`${btnPrimary} block text-center`}>{t("myOrders")}</Link>
-                <button onClick={resetDemo} className="w-full text-xs text-muted-foreground underline">{L("إعادة البيانات التجريبية", "Reset demo data")}</button>
               </div>
             </div>
           );
@@ -61,23 +60,16 @@ function Register() {
   const [f, setF] = useState({ name: "", phone: "", address: "", username: "", password: "", kitchen: "" });
   const [err, setErr] = useState("");
   if (!open) return <button onClick={() => setOpen(true)} className="w-full text-center text-sm text-secondary underline">{L("ما عندكش حساب؟ سجل توا", "No account? Sign up")}</button>;
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const username = f.username.trim().toLowerCase();
-    if (db.get().users.some((u) => u.username === username)) return setErr(L("اليوزر مستعمل", "Username taken"));
-    const id = "u_" + uid();
-    db.set((d) => {
-      if (role === "COOK") {
-        const cid = "c" + uid();
-        d.cooks.push({ id: cid, name: f.name, phone: f.phone, avatar: "🧑‍🍳", kitchen_name_ar: f.kitchen, kitchen_name_en: f.kitchen, address_ar: f.address, address_en: f.address, lat: 32.86 + Math.random() * 0.03, lng: 13.13 + Math.random() * 0.08, rating: 5, total_orders: 0, is_open: false, kitchen_video_url: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4", cover: "", is_verified: false, banned: false });
-        d.users.push({ id, name: f.name, phone: f.phone, address: f.address, role: "COOK", avatar: "🧑‍🍳", username, password: f.password, cook_id: cid });
-      } else {
-        d.users.push({ id, role, avatar: role === "DELIVERY" ? "🏍️" : "🙂", name: f.name, phone: f.phone, address: f.address, username, password: f.password });
-      }
-    });
-    session.set((s) => { s[role] = id; });
-    if (role === "COOK") router.navigate({ to: "/cook" });
-    else if (role === "DELIVERY") router.navigate({ to: "/delivery" });
+  const [busy, setBusy] = useState(false);
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault(); setErr("");
+    if (f.password.length < 4) return setErr(L("كلمة السر 4 أحرف على الأقل", "Password must be at least 4 characters"));
+    setBusy(true);
+    try {
+      await api.signUp({ ...f, role, kitchen: f.kitchen });
+      if (role === "COOK") router.navigate({ to: "/cook" });
+      else if (role === "DELIVERY") router.navigate({ to: "/delivery" });
+    } catch (x) { setErr(errText(x, L)); } finally { setBusy(false); }
   };
   return (
     <Card>
@@ -95,7 +87,7 @@ function Register() {
             value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} />
         ))}
         {err && <p className="text-sm text-destructive">{err}</p>}
-        <button className={`${btnPrimary} w-full`}>{L("سجل", "Sign up")}</button>
+        <button disabled={busy} className={`${btnPrimary} w-full`}>{L("سجل", "Sign up")}</button>
       </form>
     </Card>
   );

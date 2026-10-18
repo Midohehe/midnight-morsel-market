@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Phone } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { db, session, uid, type Order } from "@/lib/store";
+import { api, db, errText, useAuth, type Order } from "@/lib/store";
 import { timeAgo } from "@/lib/time";
 import { BottomNav, Card, STATUS, Stars, StatusPill, TopBar, btnPrimary, inputCls, money } from "@/components/nb";
 
@@ -23,8 +23,8 @@ export const Route = createFileRoute("/orders")({
 function Orders() {
   const { t, L } = useI18n();
   const data = db.use();
-  const s = session.use();
-  const mine = data.orders.filter((o) => (s.guestOrders ?? []).includes(o.id) || (s.CUSTOMER && o.customer_id === s.CUSTOMER));
+  const auth = useAuth();
+  const mine = data.orders.filter((o) => auth.userId && o.customer_id === auth.userId);
   return (
     <div className="min-h-screen pb-24">
       <TopBar title={t("myOrders")} back={false} />
@@ -94,12 +94,7 @@ function RateForm({ o }: { o: Order }) {
   const { L } = useI18n();
   const [r, setR] = useState(5);
   const [c, setC] = useState("");
-  const submit = () => db.set((d) => {
-    d.reviews.push({ id: uid(), cook_id: o.cook_id, order_id: o.id, rating: r, comment: c, created_at: Date.now() });
-    const ord = d.orders.find((x) => x.id === o.id); if (ord) ord.rated = true;
-    const k = d.cooks.find((x) => x.id === o.cook_id);
-    if (k) k.rating = Math.round(((k.rating * 20 + r) / 21) * 10) / 10;
-  });
+  const submit = () => api.rate(o.id, r, c).catch((x) => alert(errText(x, L)));
   return (
     <div className="space-y-2 rounded-xl border border-secondary/40 bg-secondary/5 p-3">
       <div className="text-sm font-bold">{L("قيّم المطبخ", "Rate the kitchen")}</div>

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n";
-import { db, distanceKm, settleDelivered } from "@/lib/store";
+import { api, db, distanceKm, errText } from "@/lib/store";
 import { WalletPanel } from "@/components/wallet";
 import { timeAgo } from "@/lib/time";
 import { Card, LoginGate, PanelHeader, Stat, StatusPill, Tabs, money } from "@/components/nb";
@@ -31,13 +31,8 @@ function DeliveryPage() {
         const mine = data.orders.filter((o) => o.delivery_boy?.id === user.id);
         const active = mine.filter((o) => o.status === "on_way");
         const list = tab === "available" ? available : tab === "mine" ? mine : [];
-        const take = (id: string) => db.set((d) => { const o = d.orders.find((x) => x.id === id); if (o && !o.delivery_boy) { o.delivery_boy = { id: user.id, name: user.name, phone: user.phone }; o.status = "on_way"; } });
-        const done = (id: string) => db.set((d) => {
-          const o = d.orders.find((x) => x.id === id); if (!o) return;
-          o.status = "delivered";
-          const k = d.cooks.find((c) => c.id === o.cook_id); if (k) k.total_orders++;
-          settleDelivered(d, o);
-        });
+        const take = (id: string) => api.driverTake(id).catch((x) => alert(errText(x, L)));
+        const done = (id: string) => api.driverDeliver(id).catch((x) => alert(errText(x, L)));
         return (
           <div className="min-h-screen pb-10">
             <PanelHeader user={user} logout={logout} title={L("سايق موتو", "Moto driver")} />
@@ -61,7 +56,7 @@ function DeliveryPage() {
                     <div className="text-sm">📍 {o.customer_name} — {o.customer_address}</div>
                     <div className="flex justify-between text-xs text-muted-foreground">
                       <span>{timeAgo(o.created_at, lang === "ar")} • {o.ready ? L("✅ جاهز", "✅ Ready") : L("🔥 يطيب", "🔥 Cooking")}</span>
-                      <span className="font-bold text-primary">{L("كاش", "Cash")}: {money(o.total, lang)}</span>
+                      <span className="font-bold text-primary">{o.payment === "wallet" ? L("مدفوع بالمحفظة", "Paid by wallet") : `${L("كاش", "Cash")}: ${money(o.total, lang)}`}</span>
                     </div>
                     {tab === "available" && <button onClick={() => take(o.id)} className="w-full rounded-xl bg-gradient-primary py-2.5 font-bold text-primary-foreground">{L("نوصلها أنا", "Accept delivery")}</button>}
                     {o.status === "on_way" && o.delivery_boy?.id === user.id && (

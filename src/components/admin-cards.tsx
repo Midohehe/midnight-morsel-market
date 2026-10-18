@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Download } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { db, genCardCode, uid } from "@/lib/store";
+import { api, db, errText, uid } from "@/lib/store";
 import { Card, Stat, btnGhost, btnPrimary, inputCls, money } from "@/components/nb";
 
 export function AdminCards() {
@@ -18,19 +18,12 @@ export function AdminCards() {
     .filter((c) => filter === "all" || (filter === "used" ? c.used_by : !c.used_by));
   const userName = (id?: string) => data.users.find((u) => u.id === id)?.name ?? "";
 
-  const issue = (e: React.FormEvent) => {
+  const issue = async (e: React.FormEvent) => {
     e.preventDefault();
     const a = Number(amount), n = Math.min(500, Math.max(1, Number(count)));
     if (!(a > 0)) return;
     const b = `B${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${a}-${uid().slice(0, 3).toUpperCase()}`;
-    db.set((d) => {
-      const existing = new Set(d.cards.map((c) => c.code));
-      for (let i = 0; i < n; i++) {
-        let code = genCardCode(); while (existing.has(code)) code = genCardCode();
-        existing.add(code);
-        d.cards.unshift({ id: "k" + uid(), code, amount: a, batch: b, created_at: Date.now() });
-      }
-    });
+    try { await api.issueCards(a, n, b); } catch (x) { return alert(errText(x, L)); }
     setBatch(b); setAmount("");
   };
 

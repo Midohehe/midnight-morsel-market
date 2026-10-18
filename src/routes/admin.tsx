@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { ChefHat, CreditCard, LayoutDashboard, ReceiptText, Wallet, Users as UsersIcon } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { APP_FEE, COMMISSION, db, isTonight, uid, type Role } from "@/lib/store";
+import { APP_FEE, COMMISSION, db, isTonight, type Role , api, errText, refresh } from "@/lib/store";
+import { adminCreateUser, adminDeleteUser } from "@/lib/admin.functions";
 import { timeAgo } from "@/lib/time";
 import { AdminCards } from "@/components/admin-cards";
 import { Card, IconTabs, LoginGate, PanelHeader, Stat, StatusPill, btnPrimary, inputCls, money } from "@/components/nb";
@@ -31,7 +32,7 @@ function AdminPage() {
   const tonight = data.orders.filter((o) => isTonight(o.created_at));
   const valid = data.orders.filter((o) => o.status !== "rejected");
   const commission = valid.reduce((s, o) => s + o.subtotal * COMMISSION, 0);
-  const patchCook = (id: string, p: Record<string, unknown>) => db.set((d) => { Object.assign(d.cooks.find((c) => c.id === id)!, p); });
+  const patchCook = (id: string, p: Partial<(typeof data.cooks)[number]>) => api.patchCook(id, p).catch((x) => alert(errText(x, L)));
 
   return (
     <LoginGate role="ADMIN" title={L("لوحة الإدارة", "Admin Panel")} demo="admin / admin123">
@@ -123,12 +124,10 @@ function Users() {
   const { L } = useI18n();
   const data = db.use();
   const [f, setF] = useState({ name: "", phone: "", username: "", password: "", role: "DELIVERY" as Role });
-  const add = (e: React.FormEvent) => {
+  const add = async (e: React.FormEvent) => {
     e.preventDefault();
-    const username = f.username.trim().toLowerCase();
-    if (data.users.some((u) => u.username === username)) return alert(L("اليوزر مستعمل", "Username taken"));
-    db.set((d) => { d.users.push({ id: "u_" + uid(), ...f, username, avatar: f.role === "DELIVERY" ? "🏍️" : "🙂" }); });
-    setF({ ...f, name: "", phone: "", username: "", password: "" });
+    try { await adminCreateUser({ data: { ...f, role: f.role as "CUSTOMER" | "DELIVERY" } }); await refresh(); setF({ ...f, name: "", phone: "", username: "", password: "" }); }
+    catch (x) { alert(errText(x, L)); }
   };
   const roles: Role[] = ["CUSTOMER", "COOK", "DELIVERY", "ADMIN"];
   return (
@@ -155,7 +154,7 @@ function Users() {
               <span className="text-2xl">{u.avatar}</span>
               <div className="flex-1"><b>{u.name}</b><div className="text-xs text-muted-foreground" dir="ltr">{u.phone} · @{u.username}</div></div>
               {u.role !== "ADMIN" && u.role !== "COOK" && (
-                <button onClick={() => confirm("Delete?") && db.set((d) => { d.users = d.users.filter((x) => x.id !== u.id); })} className="text-xs text-destructive">✕</button>
+                <button onClick={() => { if (confirm("Delete?")) adminDeleteUser({ data: { id: u.id } }).then(() => refresh()).catch((x) => alert(errText(x, L))); }} className="text-xs text-destructive">✕</button>
               )}
             </Card>
           ))}
