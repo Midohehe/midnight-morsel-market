@@ -19,7 +19,7 @@ export type Product = {
 export type OrderStatus = "pending" | "cooking" | "on_way" | "delivered" | "rejected";
 export type OrderItem = { product_id: string; qty: number; price: number; name_ar: string; name_en: string };
 export type Order = {
-  id: string; customer_id?: string; customer_name: string; customer_phone: string; customer_address: string;
+  id: string; customer_id?: string | undefined; customer_name: string; customer_phone: string; customer_address: string;
   cook_id: string; items: OrderItem[]; subtotal: number; delivery_fee: number; app_fee: number; total: number;
   status: OrderStatus; ready: boolean; created_at: number;
   delivery_boy?: { id: string; name: string; phone: string }; rated?: boolean;

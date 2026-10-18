@@ -106,7 +106,7 @@ function CookApp({ user, logout }: { user: User; logout: () => void }) {
             <div className="text-5xl">🔔</div>
             <h3 className="text-xl font-black">{L("طلب جديد!", "New order!")}</h3>
             <p>{pending[0].customer_name} • {money(pending[0].subtotal, lang)}</p>
-            <button className={`${btnPrimary} w-full`} onClick={() => { setStatus(pending[0].id, { status: "cooking" }); setPopup(false); }}>{L("قبول", "Accept")}</button>
+            <button className={`${btnPrimary} w-full`} onClick={() => { setStatus(pending[0]!.id, { status: "cooking" }); setPopup(false); }}>{L("قبول", "Accept")}</button>
           </Card>
         </div>
       )}
