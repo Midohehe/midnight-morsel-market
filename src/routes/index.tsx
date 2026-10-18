@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { MapPin, List, Map as MapIcon, ChefHat } from "lucide-react";
+import { MapPin, List, Map as MapIcon } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { db, distanceKm, CATEGORIES } from "@/lib/store";
 import { LibyaMap } from "@/components/LibyaMap";
@@ -103,7 +103,6 @@ function Home() {
           );
         })}
       </div>
-      <div className="mt-6"><RoleLinks /></div>
       <BottomNav />
     </div>
   );
@@ -117,13 +116,3 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
   );
 }
 
-function RoleLinks() {
-  const { L, t } = useI18n();
-  return (
-    <div className="grid grid-cols-3 gap-2 px-4 pb-6 text-center text-[11px]">
-      <Link to="/cook" className="rounded-xl border bg-card p-2"><ChefHat className="mx-auto mb-1 h-4 w-4 text-primary" />{t("beCook")}</Link>
-      <Link to="/delivery" className="rounded-xl border bg-card p-2"><span className="block text-base">🏍️</span>{L("سايق", "Driver")}</Link>
-      <Link to="/admin" className="rounded-xl border bg-card p-2"><span className="block text-base">🛡️</span>{L("الإدارة", "Admin")}</Link>
-    </div>
-  );
-}
