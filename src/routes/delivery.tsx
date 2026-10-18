@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n";
-import { db, distanceKm } from "@/lib/store";
+import { db, distanceKm, settleDelivered } from "@/lib/store";
+import { WalletPanel } from "@/components/wallet";
 import { timeAgo } from "@/lib/time";
 import { Card, LoginGate, PanelHeader, Stat, StatusPill, Tabs, money } from "@/components/nb";
 
@@ -22,19 +23,20 @@ export const Route = createFileRoute("/delivery")({
 function DeliveryPage() {
   const { L, lang } = useI18n();
   const data = db.use();
-  const [tab, setTab] = useState<"available" | "mine">("available");
+  const [tab, setTab] = useState<"available" | "mine" | "wallet">("available");
   return (
     <LoginGate role="DELIVERY" title={L("تطبيق السايق", "Driver App")} demo="ali / 1234 · omar / 1234">
       {(user, logout) => {
         const available = data.orders.filter((o) => o.status === "cooking" && !o.delivery_boy);
         const mine = data.orders.filter((o) => o.delivery_boy?.id === user.id);
         const active = mine.filter((o) => o.status === "on_way");
-        const list = tab === "available" ? available : mine;
+        const list = tab === "available" ? available : tab === "mine" ? mine : [];
         const take = (id: string) => db.set((d) => { const o = d.orders.find((x) => x.id === id); if (o && !o.delivery_boy) { o.delivery_boy = { id: user.id, name: user.name, phone: user.phone }; o.status = "on_way"; } });
         const done = (id: string) => db.set((d) => {
           const o = d.orders.find((x) => x.id === id); if (!o) return;
           o.status = "delivered";
           const k = d.cooks.find((c) => c.id === o.cook_id); if (k) k.total_orders++;
+          settleDelivered(d, o);
         });
         return (
           <div className="min-h-screen pb-10">
@@ -43,10 +45,11 @@ function DeliveryPage() {
               <div className="grid grid-cols-3 gap-2">
                 <Stat icon="📦" label={L("متاحة", "Available")} value={available.length} />
                 <Stat icon="🏍️" label={L("في الطريق", "Active")} value={active.length} />
-                <Stat icon="💵" label={L("أرباحي", "Earned")} value={money(mine.filter((o) => o.status === "delivered").length * 5, lang)} />
+                <Stat icon="💵" label={L("رصيدي", "Balance")} value={money(data.wallets[user.id] ?? 0, lang)} />
               </div>
-              <Tabs value={tab} onChange={setTab} items={[{ id: "available", label: L("طلبات متاحة", "Available") }, { id: "mine", label: L("توصيلاتي", "My deliveries") }]} />
-              {!list.length && <p className="py-10 text-center text-muted-foreground">{L("ما فيش طلبات توا 🌙", "No orders right now 🌙")}</p>}
+              <Tabs value={tab} onChange={setTab} items={[{ id: "available", label: L("طلبات متاحة", "Available") }, { id: "mine", label: L("توصيلاتي", "My deliveries") }, { id: "wallet", label: L("المحفظة", "Wallet") }]} />
+              {tab === "wallet" && <WalletPanel userId={user.id} />}
+              {tab !== "wallet" && !list.length && <p className="py-10 text-center text-muted-foreground">{L("ما فيش طلبات توا 🌙", "No orders right now 🌙")}</p>}
               {list.map((o) => {
                 const k = data.cooks.find((c) => c.id === o.cook_id);
                 return (

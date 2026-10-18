@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { db, resetDemo, session, uid } from "@/lib/store";
+import { WalletPanel } from "@/components/wallet";
 import { BottomNav, Card, LoginGate, PanelHeader, Stat, btnGhost, btnPrimary, inputCls } from "@/components/nb";
 
 export const Route = createFileRoute("/account")({
@@ -39,6 +40,7 @@ function Account() {
                   <div>📍 {user.address || "—"}</div>
                   <div className="text-muted-foreground">👤 {user.username}</div>
                 </Card>
+                <WalletPanel userId={user.id} />
                 <Link to="/orders" className={`${btnPrimary} block text-center`}>{t("myOrders")}</Link>
                 <div className="grid grid-cols-3 gap-2 text-center text-xs">
                   <Link to="/cook" className={btnGhost}>👩‍🍳 {t("beCook")}</Link>
